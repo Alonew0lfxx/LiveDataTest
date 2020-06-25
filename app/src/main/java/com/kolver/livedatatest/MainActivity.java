@@ -16,6 +16,14 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+/**
+ * Dikkat
+ * implementation "androidx.lifecycle:lifecycle-viewmodel:2.2.0"
+ * implementation "androidx.lifecycle:lifecycle-livedata:2.2.0"
+ * bunları implement etmey ASLA Unutma
+ * new ViewModelProvider(this).get(MyDatasetViewModel.class); Bunu asla yapamazsın aksi halde!
+ */
 public class MainActivity extends AppCompatActivity  {
 
     public MyDatasetViewModel viewModel;
@@ -23,6 +31,7 @@ public class MainActivity extends AppCompatActivity  {
     private TextView score;
     private EditText surname;
     private EditText username;
+    private MyDataset dataset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +44,10 @@ public class MainActivity extends AppCompatActivity  {
         increase = findViewById(R.id.button);
 
 
+        /**
+         * Verileri güncellediği zaman bu void çalışır ve updateLayout();
+         * sayesinde arayüz güncellenir.
+         */
         viewModel.getUserData().observe(this, new Observer<MyDataset>() {
             @Override //When we got the data; THIS SHIT AUTOMATICLY UPDATES IT!
             public void onChanged(MyDataset myDataset) {
@@ -45,25 +58,27 @@ public class MainActivity extends AppCompatActivity  {
                     surname.setText(myDataset.getUserSurname());
                 }
                 score.setText(myDataset.getScore() + "");
+                dataset = myDataset;
             }
         });
-        //viewModel.loadLiveData();
 
         increase.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (viewModel.getUserData() !=null) {
-                    int scorePoint = viewModel.getUserData().getValue().getScore();
+                if (dataset !=null) {
+                    int scorePoint = viewModel.getUserData().getValue().getScore() +1;
                     String nameee = username.getText().toString();
                     String surnamee = surname.getText().toString();
                     viewModel.getUserData().getValue().setUserName(nameee);
                     viewModel.getUserData().getValue().setUserSurname(surnamee);
-                    viewModel.getUserData().getValue().setScore(scorePoint + 1);
-                    System.out.println("viewModel.hasActiveObservers() = " + viewModel.getUserData().hasActiveObservers());
+                    viewModel.getUserData().getValue().setScore(scorePoint);
+                    viewModel.updateLayout();
                     Toast.makeText(MainActivity.this, "scorepoint : "+ scorePoint, Toast.LENGTH_SHORT).show();
                 }
             }
         });
+
+
 
 
 
@@ -76,7 +91,10 @@ public class MainActivity extends AppCompatActivity  {
     public static  class MyDatasetViewModel extends ViewModel {
 
         public MutableLiveData<MyDataset> liveData;
-
+        /**
+         * Eğer value null; hiç kullanılmamışsa default verileri yükler.
+         * @return Senin verin
+         */
         public LiveData<MyDataset> getUserData() {
             System.out.println("liveData = " + liveData);
             if (liveData == null) {
@@ -84,10 +102,24 @@ public class MainActivity extends AppCompatActivity  {
                 System.out.println("liveData = " + "null");
                 loadLiveData();// Automaticly updates layout when clicked!
             }
-            liveData.setValue(liveData.getValue());/// Birebir böyle yapmalısın!
+            //liveData.setValue(liveData.getValue());/// Birebir böyle yapmalısın!
+            //updateLayout();
             return liveData;
         }
 
+
+        /**
+         * Arayüzü günceller! Observer'a verilerin değiştiqini
+         * bildirir.</n>
+         * HER VERI GUNCELLEMESININ SONUNDA ÇALIŞTIR!
+         */
+        public void updateLayout() {
+            liveData.setValue(liveData.getValue());
+        }
+
+        /**
+         * Eğer veri yoksa default verileri yükler.
+         */
         public void loadLiveData() {
             //Bunu Hiçbirzaman layout içerisinde kullanma!
             liveData.setValue(new MyDataset("Emirhan","Kolver",0));
